@@ -498,6 +498,18 @@ cmd_setup() {
     ok "${enabled_count} integration(s) active. Others added as disabled."
   fi
 
+  # ── Plugin stack ──
+  header "Agentic plugin stack"
+  echo -e "  Installs the plugins that power the workflow (superpowers, ui-ux-pro-max,"
+  echo -e "  feature-dev, code-review, claude-mem, agent-browser, codex, and more)."
+  echo -e "  ${DIM}Core auto-installs; optional plugins are opt-in. Reversible anytime.${RESET}"
+  echo -ne "  Install the plugin stack now? (Y/n): "
+  read -r plugins_choice
+  case "${plugins_choice:-y}" in
+    n|N|no) skip "Skipped (run ./scripts/bootstrap-plugins.sh later)" ;;
+    *) "$DOTFILES_DIR/scripts/bootstrap-plugins.sh" || warn "Plugin bootstrap had issues — re-run ./scripts/bootstrap-plugins.sh" ;;
+  esac
+
   # ── Summary ──
   header "Setup complete!"
   echo ""

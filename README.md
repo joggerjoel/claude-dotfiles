@@ -28,7 +28,16 @@ The installer will:
 6. Assemble `CLAUDE.md` from base + profile + local layers
 7. Walk you through MCP server selection
 
-> **Note:** the installer does _not_ yet install Claude Code **plugins/marketplaces**. The profile `settings.json` _declares_ which plugins are enabled (`enabledPlugins`), but the marketplaces must be added and plugins installed separately via `claude plugin marketplace add <repo>` + `claude plugin install <name>`. See `profiles/desktop/settings.json` for the full enabled list. (Automating this is on the roadmap.)
+During setup you're offered the **agentic plugin stack** — this is what makes the workflow "100x". A **core** set auto-installs (superpowers, ui-ux-pro-max, feature-dev, code-review, pr-review-toolkit, code-simplifier, commit-commands, frontend-design, agent-browser, claude-mem, codex, karpathy guidelines, skill-creator, typescript-lsp, security-guidance). **Optional** plugins (backend/data, automation/research, code-intelligence, authoring, writing) are opt-in by group and reversible anytime.
+
+Run it standalone too:
+
+```bash
+./scripts/bootstrap-plugins.sh             # core + prompt for optional groups
+./scripts/bootstrap-plugins.sh --core-only # core only, no prompts
+```
+
+Manage later: `claude plugin list` · `claude plugin install <plugin>@<marketplace>` · `claude plugin uninstall <plugin>`.
 
 ## Structure
 
