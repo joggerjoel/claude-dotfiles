@@ -116,12 +116,14 @@ Full details: `~/.claude/references/project-templates.md`
 
 For **any** task involving UI, components, layout, CSS, animation, or visual design — auto-invoke these skills before writing code:
 
-1. **`ui-ux-pro-max`** — general UI/UX vocabulary, 50+ styles, color/font systems, chart picks
-2. **`design-taste`** — taste, motion, polish, anti-slop (Emil Kowalski philosophy)
-3. **`color-strategy`** (`~/.claude/skills/color-strategy/SKILL.md`) — 60/30/10 distribution rule, OKLCH perceptual color scales, semantic color (success/error/warning/info), WCAG contrast. **Auto-invoke when the task involves color decisions** (new UI, palette, theming, "feels flat/gray"). **Skip if a project design-system already governs color** — defer to its tokens instead.
-4. **Project `/design-system` skill** when in a monorepo that has one — for brand tokens and canonical components
+1. **`ui-ux-pro-max`** — general UI/UX vocabulary, 50+ styles, color/font systems, chart picks (plugin: `ui-ux-pro-max-skill`)
+2. **`design-taste`** (`~/.claude/skills/design-taste/SKILL.md`) — taste, motion, polish, anti-slop. Sources: Emil Kowalski, animations.dev, impeccable.style, styles.refero.design. Deep reference: `~/.claude/references/design-engineering-emil.md`
+3. **`react-bits`** (`~/.claude/skills/react-bits/SKILL.md`) — source pre-built **animated React components** (130+) from reactbits.dev instead of hand-rolling motion. Source, then tune with `design-taste`.
+4. **`uiverse`** (`~/.claude/skills/uiverse/SKILL.md`) — source small copy-paste UI **primitives** (buttons, loaders, toggles…) from uiverse.io (7000+, MIT). Framework-agnostic. Re-tokenize + audit a11y after pasting.
+5. **`color-strategy`** (`~/.claude/skills/color-strategy/SKILL.md`) — 60/30/10 distribution, OKLCH scales, semantic color, WCAG contrast. Auto-invoke on color decisions; skip if a project design-system governs color.
+6. **Project `/design-system` skill** when in a monorepo that has one — for brand tokens and canonical components.
 
-All compose. Trigger: "any 1% chance the task touches UI" → invoke. For color-specific work, `color-strategy` is required.
+**Pick the source:** small primitive (any stack) → `uiverse`; large animated React component → `react-bits`; whole layout → `frontend-design`. All compose. Trigger: "any 1% chance the task touches UI" → invoke.
 
 ## Things Claude Should NOT Do
 

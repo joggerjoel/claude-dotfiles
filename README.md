@@ -24,8 +24,11 @@ The installer will:
 2. Ask your GitHub username (optional, for commit policy)
 3. Ask if you want AI attribution hidden in commits
 4. Link settings, scripts, and statusline to `~/.claude/`
-5. Assemble `CLAUDE.md` from base + profile + local layers
-6. Walk you through MCP server selection
+5. Copy reference files and install global skills into `~/.claude/`
+6. Assemble `CLAUDE.md` from base + profile + local layers
+7. Walk you through MCP server selection
+
+> **Note:** the installer does _not_ yet install Claude Code **plugins/marketplaces**. The profile `settings.json` _declares_ which plugins are enabled (`enabledPlugins`), but the marketplaces must be added and plugins installed separately via `claude plugin marketplace add <repo>` + `claude plugin install <name>`. See `profiles/desktop/settings.json` for the full enabled list. (Automating this is on the roadmap.)
 
 ## Structure
 
@@ -41,6 +44,11 @@ claude-dotfiles/
 │   └── vps/
 │       ├── CLAUDE.md           # Headless constraints, resource limits
 │       └── settings.json       # Minimal plugins, sonnet, docker perms
+├── skills/                      # Global skills, copied into ~/.claude/skills/
+│   ├── design-taste/           # Taste, motion, anti-slop (Emil Kowalski et al.)
+│   ├── react-bits/             # Source animated React components (reactbits.dev)
+│   ├── uiverse/                # Source small UI primitives (uiverse.io)
+│   └── color-strategy/         # 60/30/10, OKLCH, semantic color, WCAG
 ├── examples/
 │   └── local-CLAUDE.md         # Template for personal config
 ├── .local/                      # Gitignored — your machine-specific config

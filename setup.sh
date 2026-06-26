@@ -174,6 +174,27 @@ get_field() {
   echo "$1" | cut -d'|' -f"$2"
 }
 
+# ── Skill installation ───────────────────────────────────────────
+# Copies repo skills/<name>/ into ~/.claude/skills/<name>/ (copy model, like
+# references). Only touches skills the repo owns; leaves plugin-provided and
+# user-local skills untouched. setup.sh does NOT install plugins/marketplaces —
+# those are declared in profiles/<profile>/settings.json (enabledPlugins) and
+# must be added via `claude plugin marketplace add` / `claude plugin install`.
+install_skills() {
+  [ -d "$DOTFILES_DIR/skills" ] || return 0
+  mkdir -p "$CLAUDE_DIR/skills"
+  local count=0
+  for skill_dir in "$DOTFILES_DIR"/skills/*/; do
+    [ -d "$skill_dir" ] || continue
+    local name
+    name=$(basename "$skill_dir")
+    rm -rf "$CLAUDE_DIR/skills/$name"
+    cp -R "$skill_dir" "$CLAUDE_DIR/skills/$name"
+    ((count++))
+  done
+  ok "$count skill(s) installed to ~/.claude/skills/"
+}
+
 # ── CLAUDE.md assembly ───────────────────────────────────────────
 assemble_claude_md() {
   local profile="$1" github_user="${2:-}" hide_ai="${3:-no}"
@@ -308,6 +329,9 @@ cmd_setup() {
     cp "$ref" "$CLAUDE_DIR/references/$(basename "$ref")"
   done
   ok "Reference files copied to ~/.claude/references/"
+
+  # Install repo-owned skills
+  install_skills
 
   # Assemble CLAUDE.md from layers
   assemble_claude_md "$profile" "$github_user" "$hide_ai"
@@ -625,6 +649,9 @@ cmd_update() {
     cp "$ref" "$CLAUDE_DIR/references/$(basename "$ref")"
   done
   ok "Reference files updated"
+
+  # Re-install repo-owned skills
+  install_skills
 
   # Reassemble CLAUDE.md
   assemble_claude_md "$profile" "$github_user" "$hide_ai"

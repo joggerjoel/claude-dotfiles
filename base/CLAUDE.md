@@ -110,6 +110,19 @@ Full pattern details in auto-memory (`MEMORY.md`).
 Dual-deploy (self-hosted Docker+Traefik or Vercel+Supabase). Setup: `./scripts/setup.sh <name>`
 Full details: `~/.claude/references/project-templates.md`
 
+## Design Skills (Auto-Invoke on UI Work)
+
+For **any** task involving UI, components, layout, CSS, animation, or visual design — auto-invoke these skills before writing code:
+
+1. **`ui-ux-pro-max`** — general UI/UX vocabulary, 50+ styles, color/font systems, chart picks (plugin: `ui-ux-pro-max-skill`)
+2. **`design-taste`** (`~/.claude/skills/design-taste/SKILL.md`) — taste, motion, polish, anti-slop. Sources: Emil Kowalski, [animations.dev](https://animations.dev/), [impeccable.style](https://impeccable.style/), [styles.refero.design](https://styles.refero.design/) (real-product design refs + AI-readable `DESIGN.md` specs + MCP). Deep reference: `~/.claude/references/design-engineering-emil.md`
+3. **`react-bits`** (`~/.claude/skills/react-bits/SKILL.md`) — source pre-built **animated React components** (130+: animated text, backgrounds, cursor/scroll/hover effects, interactive components) from [reactbits.dev](https://reactbits.dev) instead of hand-rolling motion. Auto-invoke for any React/Next.js UI wanting animation; skip for non-React stacks. Source, then tune the motion with `design-taste`. MIT + Commons Clause.
+4. **`uiverse`** (`~/.claude/skills/uiverse/SKILL.md`) — source small copy-paste UI **primitives** (buttons, loaders, toggles, inputs, cards, tooltips) from [uiverse.io](https://uiverse.io) (7000+, MIT) as HTML/CSS, Tailwind, React, or Figma. **Framework-agnostic.** Re-tokenize colors + audit a11y after pasting.
+5. **`color-strategy`** (`~/.claude/skills/color-strategy/SKILL.md`) — 60/30/10 distribution, OKLCH scales, semantic color, WCAG contrast. Auto-invoke on color decisions; skip if a project design-system governs color.
+6. **Project `/design-system` skill** when in a monorepo that has one — for brand tokens and canonical components.
+
+**Pick the source:** small primitive (any stack) → `uiverse`; large animated React component / hero text / background → `react-bits`; whole layout → `frontend-design`. All compose. Trigger: "any 1% chance the task touches UI" → invoke.
+
 ## Things Claude Should NOT Do
 
 - Don't edit config files without backing up first to `~/.claude/.backups/`
