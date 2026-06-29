@@ -15,13 +15,26 @@ Tiered MCP server configurations for Claude Code, loaded via `--mcp-config` + `-
 Shell functions in `~/.zshrc` route `claude` / `claude-min` / `claude-full` to the right profile. Functions (not plain aliases) so CLI subcommands like `agents`, `attach`, `logs`, `stop`, `respawn` bypass the MCP flags — see [Gotcha](#gotcha-cli-subcommands-and---strict-mcp-config) below.
 
 ```bash
+# Hold a no-idle-sleep assertion for the whole interactive session so the
+# machine doesn't fall asleep mid-task. caffeinate -i runs claude as its child
+# and releases the assertion automatically on exit. macOS only — the guard makes
+# it a transparent no-op everywhere else (e.g. the Linux vps profile), where it
+# falls back to a plain launch. `whence -p claude` resolves the real binary,
+# skipping this wrapper function so there's no recursion.
+_claude_run() {
+  if command -v caffeinate >/dev/null 2>&1; then
+    caffeinate -i "$(whence -p claude)" "$@"
+  else
+    command claude "$@"
+  fi
+}
 claude() {
   case "$1" in
     agents|attach|logs|stop|kill|respawn|rm|update|mcp|config|--version|--help|-h)
       command claude "$@"
       ;;
     *)
-      command claude --mcp-config ~/.claude/mcp-profiles/standard.json --strict-mcp-config "$@"
+      _claude_run --mcp-config ~/.claude/mcp-profiles/standard.json --strict-mcp-config "$@"
       ;;
   esac
 }
@@ -31,7 +44,7 @@ claude-min() {
       command claude "$@"
       ;;
     *)
-      command claude --mcp-config ~/.claude/mcp-profiles/minimal.json --strict-mcp-config "$@"
+      _claude_run --mcp-config ~/.claude/mcp-profiles/minimal.json --strict-mcp-config "$@"
       ;;
   esac
 }
@@ -39,6 +52,8 @@ alias claude-full='command claude'
 ```
 
 Project-level `.mcp.json` files still merge in under strict mode — so per-project MCPs (supabase, flowglad, etc.) continue working without changes.
+
+> **Staying awake:** the `_claude_run` helper keeps your machine awake only while an interactive session is running, then lets it sleep normally. It's bound to the session's lifetime, so there's no lingering assertion. On Linux desktops you can get the same effect by swapping `caffeinate -i` for `systemd-inhibit --what=idle --why="Claude Code" claude`; servers (the `vps` profile) don't idle-sleep, so the no-op fallback is correct there.
 
 ### Gotcha: CLI subcommands and `--strict-mcp-config`
 
