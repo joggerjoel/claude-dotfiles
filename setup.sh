@@ -993,7 +993,19 @@ cmd_list() {
 cmd_update() {
   header "Updating..."
   cd "$DOTFILES_DIR"
-  git pull --rebase 2>/dev/null && ok "Pulled latest changes" || warn "Git pull failed (not a git repo?)"
+  # Auto-resolve the common case — a dirty tree from local config edits — so
+  # anyone can run update without committing first. `--autostash` stashes local
+  # changes, rebases, and re-applies them atomically; plain `git pull --rebase`
+  # would instead refuse and (with stderr hidden) surface the misleading
+  # "(not a git repo?)" warning. Distinguish a genuine non-repo from a failed
+  # pull so the message is accurate.
+  if ! git rev-parse --git-dir >/dev/null 2>&1; then
+    skip "Not a git repo — skipping pull"
+  elif git pull --rebase --autostash 2>/dev/null; then
+    ok "Pulled latest changes (local edits preserved)"
+  else
+    warn "Git pull failed (no upstream, network issue, or stash conflict — check: git status)"
+  fi
 
   # Read saved preferences
   local profile="desktop" github_user="" hide_ai="no" remote_control="no"
