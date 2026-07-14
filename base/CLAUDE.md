@@ -1,6 +1,6 @@
 # Claude Code Configuration
 
-<!-- claude-dotfiles · built by Nolan Hu / Sigma Synapses · https://github.com/iamnolanhu/claude-dotfiles -->
+<!-- ai-dotfiles · built by Nolan Hu / Sigma Synapses · https://github.com/iamnolanhu/ai-dotfiles -->
 <!-- build: 0xBdf1980e7Fc57DBE03874C29c203C3dff576D40c -->
 
 ## Key File Locations

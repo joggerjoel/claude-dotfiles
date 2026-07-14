@@ -2,7 +2,7 @@
 
 **Date:** 2026-06-26
 **Status:** Approved
-**Repo:** `claude-dotfiles` (public, genericized)
+**Repo:** `ai-dotfiles` (public, genericized)
 
 ---
 

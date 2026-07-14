@@ -1,4 +1,4 @@
-# claude-dotfiles
+# ai-dotfiles
 
 > Turn Claude Code into an AI engineering team that plans, builds, tests, and ships real software — even if you've never written a line of code.
 
@@ -32,8 +32,8 @@ It's not a promise — it's how the work actually gets done below.
 ## Quick start
 
 ```bash
-git clone https://github.com/iamnolanhu/claude-dotfiles.git
-cd claude-dotfiles
+git clone https://github.com/iamnolanhu/ai-dotfiles.git
+cd ai-dotfiles
 ./setup.sh
 ```
 
@@ -74,7 +74,7 @@ This isn't a demo config — it's production tooling for a real AI agency. Here'
 
 One founder writes the code, runs production, and talks to clients — no handoffs. This repo is how that's possible. _Streamline the Future._
 
-📖 The full story: **[How I ship like a team of one](https://dev.nolanhu.com/blog/2026/06/26/ship-like-a-team-of-one/)** on dev.nolanhu.com. Project page: **[dev.nolanhu.com/projects/claude-dotfiles](https://dev.nolanhu.com/projects/claude-dotfiles/)**.
+📖 The full story: **[How I ship like a team of one](https://dev.nolanhu.com/blog/2026/06/26/ship-like-a-team-of-one/)** on dev.nolanhu.com. Project page: **[dev.nolanhu.com/projects/ai-dotfiles](https://dev.nolanhu.com/projects/ai-dotfiles/)**.
 
 ## Profiles, structure & commands
 
@@ -87,7 +87,7 @@ Two profiles — **Desktop** (full browser tooling, 30 plugins enabled) and **VP
 ./setup.sh update       # Pull latest and reassemble config
 ```
 
-> **Telemetry opt-out vs Remote Control** — the desktop profile ships `DISABLE_TELEMETRY`, `DO_NOT_TRACK`, and `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`. Claude Code gates feature-flag reads behind these vars, so any one of them **silently disables Remote Control (`/rc`)** and other flag-gated features, even on eligible accounts ([#4](https://github.com/iamnolanhu/claude-dotfiles/issues/4), [anthropics/claude-code#76748](https://github.com/anthropics/claude-code/issues/76748)). Setup asks whether you use Remote Control: answer **y** and `settings.json` is installed as a _copy_ with those three vars stripped (Claude Code telemetry back on); answer **n** (the default) to keep the privacy opt-out and skip `/rc`. Flip the choice later by editing `.local/.remote-control` (`yes`/`no`) and running `./setup.sh update`. The other telemetry vars (`DISABLE_ERROR_REPORTING`, `NEXT_TELEMETRY_DISABLED`, `TURBO_TELEMETRY_DISABLED`, `VERCEL_TELEMETRY_DISABLED`, `CLAUDE_MEM_TELEMETRY`) are not part of the gate and always stay off.
+> **Telemetry opt-out vs Remote Control** — the desktop profile ships `DISABLE_TELEMETRY`, `DO_NOT_TRACK`, and `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`. Claude Code gates feature-flag reads behind these vars, so any one of them **silently disables Remote Control (`/rc`)** and other flag-gated features, even on eligible accounts ([#4](https://github.com/iamnolanhu/ai-dotfiles/issues/4), [anthropics/claude-code#76748](https://github.com/anthropics/claude-code/issues/76748)). Setup asks whether you use Remote Control: answer **y** and `settings.json` is installed as a _copy_ with those three vars stripped (Claude Code telemetry back on); answer **n** (the default) to keep the privacy opt-out and skip `/rc`. Flip the choice later by editing `.local/.remote-control` (`yes`/`no`) and running `./setup.sh update`. The other telemetry vars (`DISABLE_ERROR_REPORTING`, `NEXT_TELEMETRY_DISABLED`, `TURBO_TELEMETRY_DISABLED`, `VERCEL_TELEMETRY_DISABLED`, `CLAUDE_MEM_TELEMETRY`) are not part of the gate and always stay off.
 
 No personal info is committed — infrastructure, IPs, and SSH live in gitignored `.local/`. Full architecture, profile details, and the capability map are in **[GETTING-STARTED.md](GETTING-STARTED.md)** (Part 3).
 

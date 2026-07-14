@@ -120,7 +120,7 @@ Reference by env-var name; actual values live in `~/.claude/.env` and your secre
 
 Remote MCPs (hosted scrapegraph, `parse`, `crawl4ai`) are wired via the `mcp-remote` stdio
 shim because of CC bug #51581 (HTTP-header `${VAR}` substitution). They load under
-`claude-full`; add to `claude-dotfiles/profiles/mcp/standard.json` for the default strict `claude`.
+`claude-full`; add to `ai-dotfiles/profiles/mcp/standard.json` for the default strict `claude`.
 
 ## Project source
 

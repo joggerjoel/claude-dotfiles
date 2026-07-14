@@ -14,7 +14,7 @@ Everything needed to bring a fresh machine to a fully-working Claude Code config
 
 ## 2. Run the installer
 
-- [ ] `cd claude-dotfiles && ./setup.sh`
+- [ ] `cd ai-dotfiles && ./setup.sh`
   - [ ] Pick **profile**: desktop / vps
   - [ ] Set **GitHub username** + AI-attribution preference (commit policy)
   - [ ] **Remote Control** choice (desktop only — strips telemetry opt-out vars)
