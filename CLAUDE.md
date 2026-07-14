@@ -148,3 +148,10 @@ For **any** task involving UI, components, layout, CSS, animation, or visual des
 ---
 
 _Update this file when Claude makes mistakes. Every error is a learning opportunity._
+
+## Working on this repo (maintainers)
+
+> These notes are for editing the toolkit itself — they are not part of the deployed sample above.
+
+- **settings.json lives in 3 places:** `profiles/{desktop,vps}/settings.json` (source) → `~/.claude/settings.json`. The live file is a **symlink** normally, but a stripped **copy** when Remote Control is enabled — then a profile edit won't propagate; run `./setup.sh update` (or edit the live copy too).
+- **Serena's dashboard** is controlled by `~/.serena/serena_config.yml` (`ensure_serena_dashboard_off`), _not_ the `--enable-web-dashboard` flags in the `~/.claude.json` block — serena runs as a plugin and ignores them.
