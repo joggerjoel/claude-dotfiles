@@ -422,6 +422,15 @@
             "command": "echo '{\"systemMessage\": \"Tip: run /claude-md-management:revise-claude-md to capture learnings into CLAUDE.md\"}'"
           }
         ]
+      },
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -x \"$HOME/.claude/scripts/check-updates.sh\" ] && \"$HOME/.claude/scripts/check-updates.sh\" || true"
+          }
+        ]
       }
     ]
   },
