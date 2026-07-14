@@ -120,10 +120,6 @@
           {
             "type": "command",
             "command": "~/.claude/scripts/code-simplifier-gate.sh"
-          },
-          {
-            "type": "command",
-            "command": "echo '{\"systemMessage\": \"Did Claude make any mistakes? Run /claude-md-management:revise-claude-md to capture learnings\"}'"
           }
         ]
       }
@@ -133,7 +129,17 @@
         "hooks": []
       }
     ],
-    "SessionStart": []
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"systemMessage\": \"Tip: run /claude-md-management:revise-claude-md to capture learnings into CLAUDE.md\"}'"
+          }
+        ]
+      }
+    ]
   },
   "enabledPlugins": {
     "n8n-mcp-skills@n8n-mcp-skills": true,
