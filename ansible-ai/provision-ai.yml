@@ -49,6 +49,41 @@
           and sudo access, then re-run. Skipping all installs for this host.
       when: prereq_check.rc != 0
 
+    # Node.js runtime for Gemini CLI (npm-only, needs node >=20). Not an OS
+    # package, so bootstrap nvm + Node LTS here — as part of the deploy — when no
+    # runtime is present. Idempotent: skipped when node already resolves.
+    - name: Is a Node.js runtime available (system or nvm)?
+      ansible.builtin.shell: |
+        command -v node >/dev/null 2>&1 && exit 0
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+        command -v node >/dev/null 2>&1
+      args:
+        executable: /bin/bash
+      register: node_check
+      changed_when: false
+      failed_when: false
+
+    - name: Install nvm (when no Node.js runtime present)
+      ansible.builtin.shell: |
+        set -o pipefail
+        curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.5/install.sh | bash
+      args:
+        executable: /bin/bash
+        creates: "{{ ansible_env.HOME }}/.nvm/nvm.sh"
+      when: node_check.rc != 0
+
+    - name: Install Node.js LTS via nvm (when no Node.js runtime present)
+      ansible.builtin.shell: |
+        set -o pipefail
+        export NVM_DIR="$HOME/.nvm"
+        . "$NVM_DIR/nvm.sh"
+        nvm install --lts
+        nvm alias default 'lts/*'
+      args:
+        executable: /bin/bash
+      when: node_check.rc != 0
+
     # ── Stage A: runtime ─────────────────────────────────────────────
     - name: Detect existing tmux
       ansible.builtin.shell: command -v tmux
