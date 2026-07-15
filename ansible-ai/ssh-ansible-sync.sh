@@ -10,10 +10,8 @@
 #
 # Excluded automatically: wildcard `Host *` and the derived `*-claude` aliases.
 #
-# Flags:
-#   --dry-run   show the resulting hosts block, write nothing
-#   --yes       skip the confirm prompt (keeps current selection = existing hosts)
-#   -h|--help
+# Run with NO arguments for the interactive menu; use an action flag
+# (--write / --plan / --deploy) to run non-interactively. See --help.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -22,16 +20,64 @@ INVENTORY="${INVENTORY:-$SCRIPT_DIR/inventory.yml}"
 UPDATE_PLAYBOOK="${UPDATE_PLAYBOOK:-$SCRIPT_DIR/update.yml}"
 PROVISION_PLAYBOOK="${PROVISION_PLAYBOOK:-$SCRIPT_DIR/provision-ai.yml}"
 
+usage() {
+  cat <<'EOF'
+ssh-ansible-sync.sh — sync ~/.ssh/config hosts into inventory.yml, and
+plan/deploy playbooks against them.
+
+  No arguments        open the interactive checklist menu
+  action flag         run non-interactively (scripts/CI)
+
+Actions (choose one; omit for the menu):
+  --write             write the selection into inventory.yml
+  --plan              ansible-playbook --check --diff against the selected hosts
+  --deploy            real ansible-playbook run against the selected hosts
+
+Options:
+  --playbook update|provision  playbook for --plan/--deploy (default: update)
+  --hosts a,b,c                target these hosts (default: hosts already in inventory)
+  --all                        target every host found in ~/.ssh/config
+  --yes, -y                    skip confirmations (deploy); with no action = write-and-exit
+  --dry-run                    show the resulting hosts block, write nothing
+  -h, --help
+
+Examples:
+  ssh-ansible-sync.sh                                          # interactive menu
+  ssh-ansible-sync.sh --plan --hosts aorus
+  ssh-ansible-sync.sh --deploy --playbook provision --hosts aorus,aorus4 --yes
+  ssh-ansible-sync.sh --write --all
+EOF
+}
+
 DRY_RUN=false
 ASSUME_YES=false
-for arg in "$@"; do
-  case "$arg" in
+ACTION=""           # ""|write|plan|deploy  (non-empty => non-interactive)
+PLAYBOOK_CHOICE=""  # ""|update|provision|<path>
+HOSTS_CSV=""        # explicit comma-separated host selection
+SELECT_ALL=false
+while [[ $# -gt 0 ]]; do
+  case "$1" in
     --dry-run) DRY_RUN=true ;;
     --yes | -y) ASSUME_YES=true ;;
-    -h | --help) sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
-    *) echo "Unknown flag: $arg" >&2; exit 2 ;;
+    --write) ACTION="write" ;;
+    --plan) ACTION="plan" ;;
+    --deploy) ACTION="deploy" ;;
+    --playbook) [[ $# -ge 2 ]] || { echo "--playbook needs a value" >&2; exit 2; }; PLAYBOOK_CHOICE="$2"; shift ;;
+    --playbook=*) PLAYBOOK_CHOICE="${1#*=}" ;;
+    --hosts) [[ $# -ge 2 ]] || { echo "--hosts needs a value" >&2; exit 2; }; HOSTS_CSV="$2"; shift ;;
+    --hosts=*) HOSTS_CSV="${1#*=}" ;;
+    --all) SELECT_ALL=true ;;
+    -h | --help) usage; exit 0 ;;
+    *) echo "Unknown flag: $1" >&2; exit 2 ;;
   esac
+  shift
 done
+
+# Validate the --playbook choice early (update|provision keyword, or a real file).
+case "$PLAYBOOK_CHOICE" in
+  "" | update | provision) : ;;
+  *) [[ -f "$PLAYBOOK_CHOICE" ]] || { echo "Unknown --playbook '$PLAYBOOK_CHOICE' (use update|provision or a file path)" >&2; exit 2; } ;;
+esac
 
 [[ -f "$SSH_CONFIG" ]] || { echo "No ssh config at $SSH_CONFIG" >&2; exit 1; }
 [[ -f "$INVENTORY" ]] || { echo "No inventory at $INVENTORY" >&2; exit 1; }
@@ -77,6 +123,23 @@ done
 
 [[ ${#NAMES[@]} -gt 0 ]] || { echo "No selectable hosts in $SSH_CONFIG" >&2; exit 1; }
 
+# ── Flag-driven selection: --all / --hosts override the inventory pre-check ────
+# (also pre-selects the menu when no action flag is given).
+if $SELECT_ALL; then
+  for i in "${!CHECK[@]}"; do CHECK[$i]=1; done
+elif [[ -n "$HOSTS_CSV" ]]; then
+  for i in "${!CHECK[@]}"; do CHECK[$i]=0; done
+  IFS=',' read -ra WANT <<<"$HOSTS_CSV"
+  for w in "${WANT[@]}"; do
+    w="${w// /}"; [[ -z "$w" ]] && continue
+    found=false
+    for i in "${!NAMES[@]}"; do
+      [[ "${NAMES[$i]}" == "$w" ]] && { CHECK[$i]=1; found=true; break; }
+    done
+    $found || echo "  ! host not in ~/.ssh/config (ignored): $w" >&2
+  done
+fi
+
 # ── 3. Interactive checklist ─────────────────────────────────────────────────
 # Arrow-key TUI when stdin+stdout are a terminal; line-based fallback otherwise.
 TUI=false
@@ -112,7 +175,9 @@ render() {
 
 PENDING_ACTION=""   # set to plan|deploy when a hotkey breaks the selection loop
 
-if ! $ASSUME_YES && $TUI; then
+if [[ -n "$ACTION" ]]; then
+  : # non-interactive: selection already resolved from flags; skip the menu entirely
+elif ! $ASSUME_YES && $TUI; then
   cursor=0
   goto=""
   printf '\033[?25l'                       # hide the terminal cursor
@@ -230,7 +295,7 @@ write_inventory() {
   }
 }
 
-# choose_playbook — echo the selected playbook path (empty = cancel).
+# choose_playbook — echo the selected playbook path (empty = cancel). Interactive.
 choose_playbook() {
   local key
   printf "  Playbook:  1) update.yml   2) provision-ai.yml   (q cancel): " >&2
@@ -242,17 +307,27 @@ choose_playbook() {
   esac
 }
 
-# run_playbook plan|deploy — run the chosen playbook against a throwaway inventory
-# containing only the checked hosts (inventory.yml is left untouched).
+# resolve_playbook <update|provision|path|""> -> playbook path (default: update).
+resolve_playbook() {
+  case "${1:-}" in
+    "" | update) echo "$UPDATE_PLAYBOOK" ;;
+    provision)   echo "$PROVISION_PLAYBOOK" ;;
+    *)           echo "$1" ;;
+  esac
+}
+
+# run_playbook plan|deploy [playbook] — run the playbook against a throwaway
+# inventory containing only the checked hosts (inventory.yml is left untouched).
+# With no playbook arg it prompts (menu); deploy confirms unless --yes was given.
 run_playbook() {
-  local mode="$1"
+  local mode="$1" pb="${2:-}"
   command -v ansible-playbook >/dev/null || { echo "  ansible-playbook not found on PATH." >&2; return 1; }
   local n; n="$(checked_count)"
   [[ "$n" -gt 0 ]] || { echo "  Nothing selected — check at least one host first." >&2; return 1; }
-  local pb; pb="$(choose_playbook)"
+  [[ -n "$pb" ]] || pb="$(choose_playbook)"
   [[ -n "$pb" ]] || { echo "  Cancelled."; return 0; }
   [[ -f "$pb" ]] || { echo "  Playbook not found: $pb" >&2; return 1; }
-  if [[ "$mode" == deploy ]]; then
+  if [[ "$mode" == deploy ]] && ! $ASSUME_YES; then
     printf "  Deploy to %s host(s) via %s? (y/N): " "$n" "$(basename "$pb")"
     local ok; read -r ok || ok="n"
     [[ "$ok" =~ ^[yY] ]] || { echo "  Cancelled."; return 0; }
@@ -290,6 +365,16 @@ action_menu() {
     esac
   done
 }
+
+# ── Non-interactive dispatch: an action flag runs directly, no menu ───────────
+if [[ -n "$ACTION" ]]; then
+  case "$ACTION" in
+    write) write_inventory && exit 0 || exit 1 ;;
+    plan | deploy)
+      rc=0; run_playbook "$ACTION" "$(resolve_playbook "$PLAYBOOK_CHOICE")" || rc=$?
+      exit "$rc" ;;
+  esac
+fi
 
 NEW_HOSTS="$(gen_hosts)"
 [[ -n "$NEW_HOSTS" ]] || { echo "Nothing selected — inventory unchanged." >&2; exit 0; }
