@@ -1,0 +1,62 @@
+---
+# Push-mode config deploy — no GitHub round-trip.
+#
+# Rsyncs THIS machine's checkout (INCLUDING uncommitted changes) straight to
+# every server's {{ dotfiles_dir }}, then re-applies each host's saved
+# profile with `setup.sh update --no-pull` (a pull would clobber the push).
+#
+#   ansible-playbook push-config.yml                 # all servers
+#   ansible-playbook push-config.yml --limit aorus7  # one host
+#
+# Use this to TEST config changes fleet-wide before committing. Git stays
+# the source of truth: the next pull-based run (update.yml / ./deploy.sh)
+# hard-resets vps hosts back to origin/main, reverting anything pushed here
+# that never got committed. Targets servers only — the control node IS the
+# source, and its personal layer (.local/, inventory.local.yml, backups)
+# is excluded from the sync.
+- name: Push local config to the fleet (working tree, no git)
+  hosts: aorus_ai
+  gather_facts: true
+  vars:
+    src_dir: "{{ playbook_dir }}/.."
+  tasks:
+    - name: Is rsync available on the host?
+      ansible.builtin.shell: command -v rsync
+      register: rsync_check
+      changed_when: false
+      failed_when: false
+
+    - name: Report hosts that need rsync
+      ansible.builtin.debug:
+        msg: "rsync missing — install it (sudo apt-get install -y rsync) or use update.yml"
+      when: rsync_check.rc != 0
+
+    - name: Sync working tree to the host
+      ansible.posix.synchronize:
+        src: "{{ src_dir }}/"
+        dest: "{{ dotfiles_dir }}/"
+        recursive: true
+        delete: false
+        use_ssh_args: true
+        rsync_opts:
+          - "--exclude=.git"
+          - "--exclude=.local"
+          - "--exclude=backup"
+          - "--exclude=.worktrees"
+          - "--exclude=.claude"
+          - "--exclude=ansible-ai/inventory.local.yml*"
+          - "--exclude=.DS_Store"
+      when: rsync_check.rc == 0
+
+    - name: Re-apply saved profile without pulling
+      ansible.builtin.shell: bash setup.sh update --no-pull
+      args:
+        chdir: "{{ dotfiles_dir }}"
+        executable: /bin/bash
+      register: apply_out
+      changed_when: true
+      when: rsync_check.rc == 0
+
+    - name: Report per-host result
+      ansible.builtin.debug:
+        msg: "{{ (apply_out.stdout_lines | default(['skipped — no rsync']))[-2:] }}"

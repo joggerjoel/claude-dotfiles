@@ -131,9 +131,11 @@ else
 fi
 
 # https://docs.snowflake.com/en/user-guide/cortex-code/cortex-code-cli
+# NON_INTERACTIVE + SKIP_PATH_PROMPT: the installer otherwise prompts
+# "add .local/bin to PATH? [y/N]" on /dev/tty and dies without one.
 update_cli "cortex" "$HOME/.local/bin/cortex" \
   "\"%BIN%\" update" \
-  "curl $CURL_RETRY -LsS https://ai.snowflake.com/static/cc-scripts/install.sh | sh"
+  "curl $CURL_RETRY -LsS https://ai.snowflake.com/static/cc-scripts/install.sh | NON_INTERACTIVE=1 SKIP_PATH_PROMPT=1 sh"
 
 # opencode's installer dir varies between versions.
 OPENCODE_INSTALL="curl $CURL_RETRY -fsSL https://opencode.ai/install | bash"

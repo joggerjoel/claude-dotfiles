@@ -118,6 +118,15 @@ cd ansible-ai && ansible-playbook update.yml   # Fleet: both layers on every
                                                # server + this machine
 ```
 
+There's also a **push mode** for testing uncommitted config fleet-wide with no
+GitHub round-trip — it rsyncs this machine's working tree to the servers and
+re-applies without git (the next pull-based update reverts anything you never
+committed):
+
+```bash
+cd ansible-ai && ansible-playbook push-config.yml [--limit host]
+```
+
 The fleet path is pull-based: each host runs `git pull` against this repo, so
 the flow is always **commit → push → playbook** — nothing reaches a host that
 isn't on `origin/main` first. Details, dry-run, and per-host targeting:

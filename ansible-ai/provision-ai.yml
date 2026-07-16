@@ -146,7 +146,7 @@
     - name: Install Cortex Code CLI (Snowflake installer -> ~/.local/bin/cortex)
       ansible.builtin.shell: |
         set -o pipefail
-        curl {{ curl_retry }} -fsSL https://ai.snowflake.com/static/cc-scripts/install.sh | sh
+        curl {{ curl_retry }} -fsSL https://ai.snowflake.com/static/cc-scripts/install.sh | NON_INTERACTIVE=1 SKIP_PATH_PROMPT=1 sh
       args:
         executable: /bin/bash
         creates: "{{ ansible_env.HOME }}/.local/bin/cortex"

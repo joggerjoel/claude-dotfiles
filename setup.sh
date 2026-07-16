@@ -1015,6 +1015,11 @@ cmd_list() {
 }
 
 cmd_update() {
+  # --no-pull: re-apply config from the tree AS-IS. Used by the push-mode
+  # deploy (ansible-ai/push-config.yml), which rsyncs the control node's
+  # working tree here first — a git pull would immediately clobber it.
+  local no_pull="no"
+  [ "${1:-}" = "--no-pull" ] && no_pull="yes"
   header "Updating..."
   cd "$DOTFILES_DIR"
   # Fingerprint this script BEFORE the pull so we can tell if the pull rewrites
@@ -1033,7 +1038,9 @@ cmd_update() {
   # "PULL-FAILED" is a sentinel ansible-ai/update.yml can grep for.
   local saved_profile="desktop" head_before="" pull_status="up-to-date"
   [ -f "$DOTFILES_DIR/.local/.profile" ] && saved_profile="$(cat "$DOTFILES_DIR/.local/.profile")"
-  if ! git rev-parse --git-dir >/dev/null 2>&1; then
+  if [ "$no_pull" = "yes" ]; then
+    skip "Git sync skipped (--no-pull — applying the tree as pushed)"
+  elif ! git rev-parse --git-dir >/dev/null 2>&1; then
     skip "Not a git repo — skipping pull"
   else
     head_before="$(git rev-parse HEAD 2>/dev/null || true)"
@@ -1177,7 +1184,7 @@ cmd_env() {
 case "${1:-}" in
   add)      cmd_add "${2:-}" ;;
   list)     cmd_list ;;
-  update)   cmd_update ;;
+  update)   cmd_update "${2:-}" ;;
   env)      cmd_env "${2:-}" "${3:-}" ;;
   supabase) configure_supabase "${2:-}" ;;
   help|--help|-h)
@@ -1190,6 +1197,7 @@ case "${1:-}" in
     echo "  ./setup.sh env KEY [v]  Add an API key to ~/.claude/.env"
     echo "  ./setup.sh supabase [m] Configure Supabase MCP (m = cloud|internal, or prompt)"
     echo "  ./setup.sh update       Pull latest and reassemble config"
+    echo "                          (--no-pull: reassemble without touching git)"
     echo "  ./setup.sh help         Show this help"
     ;;
   *)      cmd_setup ;;
