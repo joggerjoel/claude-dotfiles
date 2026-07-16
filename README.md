@@ -115,6 +115,24 @@ the flow is always **commit → push → playbook** — nothing reaches a host t
 isn't on `origin/main` first. Details, dry-run, and per-host targeting:
 **[ansible-ai/README.md](ansible-ai/README.md)**.
 
+### Deploying changes to the fleet
+
+Local `./setup.sh` and the fleet's unattended runs are the same engine: each
+server replays `setup.sh update` with its saved profile answers, so whatever
+setup produces from the repo (CLAUDE.md assembly, settings, skills, plugins,
+MCP config) lands identically everywhere.
+
+| You changed…                                                    | Deploy with                                                                                            |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Anything in the repo (skills, profiles, CLAUDE.md, plugin list) | commit → push → `ansible-playbook update.yml`                                                          |
+| Nothing — just want latest binaries/plugins everywhere          | `ansible-playbook update.yml` alone                                                                    |
+| Added a **new server**                                          | add it to `ansible-ai/inventory.local.yml`, then `ansible-playbook provision-ai.yml -K --limit <host>` |
+
+Two things never deploy, by design: the gitignored personal layer (`.local/`,
+`ansible-ai/inventory.local.yml`, `~/.claude/.env`) stays machine-local, and
+interactive setup choices travel only if they're reflected in tracked files —
+each host replays its own saved answers, not yours.
+
 ## More from the lab
 
 Other open-source tools from the same workbench:
