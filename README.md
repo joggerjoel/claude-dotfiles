@@ -91,6 +91,30 @@ Two profiles — **Desktop** (full browser tooling, 30 plugins enabled) and **VP
 
 No personal info is committed — infrastructure, IPs, and SSH live in gitignored `.local/`. Full architecture, profile details, and the capability map are in **[GETTING-STARTED.md](GETTING-STARTED.md)** (Part 3).
 
+## Updating
+
+Three layers, three commands:
+
+```bash
+./update.sh             # Binaries: Claude Code + the sibling agent CLIs
+                        # (codex, cursor-agent, cortex, opencode, gemini).
+                        # Snapshots config to backup/<timestamp>/ with a
+                        # generated rollback.sh first. Offers to install
+                        # missing CLIs when run interactively.
+./setup.sh update       # Config: git pull + reassemble CLAUDE.md/settings
+                        # + refresh the plugin/skill stack
+```
+
+```bash
+cd ansible-ai && ansible-playbook update.yml   # Fleet: both layers on every
+                                               # server + this machine
+```
+
+The fleet path is pull-based: each host runs `git pull` against this repo, so
+the flow is always **commit → push → playbook** — nothing reaches a host that
+isn't on `origin/main` first. Details, dry-run, and per-host targeting:
+**[ansible-ai/README.md](ansible-ai/README.md)**.
+
 ## More from the lab
 
 Other open-source tools from the same workbench:
