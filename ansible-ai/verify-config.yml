@@ -1,0 +1,47 @@
+---
+# Read-only verification — run after any deploy to PROVE every target has
+# what you think you pushed, instead of assuming a green play meant success.
+#
+#   ansible-playbook verify-config.yml
+#   ansible-playbook verify-config.yml --limit macstudio
+#
+# Asserts, per host:
+#   • repo HEAD == origin/main as seen from the control node (no drift)
+#   • a saved profile exists (.local/.profile — no silent default-answers)
+#   • live settings.json is a stripped COPY: 0 telemetry gate vars
+#     (Remote Control unblocked) and remoteControlAtStartup enabled
+#   • the claude binary answers --version
+# A failed assert prints the host's actual state — the recap goes red
+# instead of lying.
+- name: Verify deployed config on every target
+  hosts: ai_all
+  gather_facts: true
+  vars:
+    expected_head: "{{ lookup('pipe', 'git -C ' ~ playbook_dir ~ '/.. rev-parse --short=7 origin/main') }}"
+  tasks:
+    - name: Collect config state
+      ansible.builtin.shell: |
+        f="$HOME/.claude/settings.json"
+        t=copy; [ -L "$f" ] && t=symlink
+        gates=$(jq -r '.env | keys[]' "$f" 2>/dev/null | grep -cE '^(DISABLE_TELEMETRY|DO_NOT_TRACK|CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC)$' || true)
+        rc=$(jq -r '.remoteControlAtStartup // false' "$f" 2>/dev/null)
+        head=$(git -C "{{ dotfiles_dir }}" rev-parse --short=7 HEAD 2>/dev/null || echo none)
+        profile=$(cat "{{ dotfiles_dir }}/.local/.profile" 2>/dev/null || echo UNSAVED)
+        ver=$("{{ claude_bin }}" --version 2>/dev/null | awk '{print $1}' || echo none)
+        echo "head=$head profile=$profile settings=$t gates=$gates rc=$rc claude=$ver"
+      args:
+        executable: /bin/bash
+      register: state
+      changed_when: false
+
+    - name: Assert config matches what was deployed
+      ansible.builtin.assert:
+        that:
+          - "('head=' ~ expected_head) in state.stdout"
+          - "'profile=UNSAVED' not in state.stdout"
+          - "'settings=copy' in state.stdout"
+          - "'gates=0' in state.stdout"
+          - "'rc=true' in state.stdout"
+          - "'claude=none' not in state.stdout"
+        fail_msg: "CONFIG DRIFT on {{ inventory_hostname }}: {{ state.stdout }} (expected head={{ expected_head }})"
+        success_msg: "{{ inventory_hostname }}: {{ state.stdout }}"

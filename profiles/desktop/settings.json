@@ -542,5 +542,6 @@
   "autoCompactEnabled": false,
   "skipAutoPermissionPrompt": true,
   "voiceEnabled": true,
-  "skipDangerousModePermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true,
+  "remoteControlAtStartup": true
 }

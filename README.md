@@ -135,6 +135,15 @@ committed):
 cd ansible-ai && ansible-playbook push-config.yml [--limit host]
 ```
 
+And a **verify step** that proves a deploy actually landed — asserts per host
+that the repo is at origin/main, the profile answers are saved, settings are
+a stripped copy (Remote Control unblocked, `remoteControlAtStartup` on), and
+the binary responds:
+
+```bash
+cd ansible-ai && ansible-playbook verify-config.yml
+```
+
 The fleet path is pull-based: each host runs `git pull` against this repo, so
 the flow is always **commit → push → playbook** — nothing reaches a host that
 isn't on `origin/main` first. Details, dry-run, and per-host targeting:
