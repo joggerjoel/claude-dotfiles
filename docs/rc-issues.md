@@ -72,6 +72,18 @@ host.
 3. **Headless servers:** only worth flipping if you actually run interactive
    `claude` sessions there that you want visible in claude.ai/code.
 
+## Fleet default (2026-07-16)
+
+Both profiles now ship `"remoteControlAtStartup": true`, so on any machine
+managed by this repo, every Claude Code session starts the Remote Control
+bridge automatically — no `/rc` needed. Verify fleet-wide with
+`ansible-playbook verify-config.yml` (asserts `rc=true` + `gates=0` per host).
+
+**Machines vs sessions:** claude.ai/code lists _running sessions_, not
+machines. A host with perfect config but no active `claude` process shows
+nothing — start its persistent session (`ssh <host>-claude`) first. Restart
+any long-running session after config changes; env is read at startup.
+
 ## Still not showing?
 
 - Restart Claude Code (env is read at startup).

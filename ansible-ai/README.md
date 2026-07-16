@@ -99,6 +99,15 @@ installs any newly-listed CORE plugins. No `-K` needed — no package installs.
 - **Re-provision from scratch** on a host: the setup step is guarded by
   `~/.claude/settings.json`; delete that file to force a full re-setup.
 
+## The other playbooks & tools
+
+| What                  | Command                              | Notes                                                                                                                                                                                                                |
+| --------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **One-shot deploy**   | `../deploy.sh -m "msg"`              | commit + push + `update.yml`, runnable from any directory                                                                                                                                                            |
+| **Push mode**         | `ansible-playbook push-config.yml`   | rsyncs the control node's working tree (incl. **uncommitted** changes) to the servers and re-applies via `setup.sh update --no-pull`. Testing channel — the next pull-based update reverts anything never committed. |
+| **Verify**            | `ansible-playbook verify-config.yml` | read-only assertions per host: repo at origin/main, profile answers saved, settings a stripped copy (0 telemetry gate vars, `remoteControlAtStartup` on), binary responsive. Red recap on any drift.                 |
+| **Scheduled updates** | `../scripts/fleet-cron-setup.sh`     | control-node cron runs `update.yml` daily — targets need nothing. Log: `~/.claude/.changelog/fleet-update.log`                                                                                                       |
+
 ## Syncing the inventory from `~/.ssh/config`
 
 `inventory.local.yml` is the source of truth for which servers the playbooks target.
