@@ -4,7 +4,7 @@ set -uo pipefail
 # ─────────────────────────────────────────────────────────────────
 # agents-update.sh — upgrade the sibling agent CLIs, when installed:
 #   codex (OpenAI), cursor-agent (Cursor), opencode, gemini (Google),
-#   cortex (Snowflake Cortex Code).
+#   cortex (Snowflake Cortex Code), headroom (context-optimization proxy).
 #
 # Single source of truth for "update every AI CLI besides claude":
 # called by ./update.sh locally and by ansible-ai/update.yml on the
@@ -160,6 +160,25 @@ if command -v brew >/dev/null 2>&1; then
   brew list --formula gemini-cli >/dev/null 2>&1 && GEMINI_UPGRADE="brew upgrade gemini-cli"
 fi
 update_cli "gemini" "gemini" "$GEMINI_UPGRADE" "$GEMINI_INSTALL"
+
+# headroom is pipx-managed; `headroom update` confirms on a tty, so
+# drive pipx directly. An already-running proxy keeps serving the old
+# code after an upgrade — warn instead of restarting it, since other
+# CLIs may be mid-stream through it.
+update_cli "headroom" "$HOME/.local/bin/headroom" \
+  "pipx upgrade headroom-ai" \
+  "pipx install 'headroom-ai[all]'"
+HEADROOM_BIN="$HOME/.local/bin/headroom"
+[ -x "$HEADROOM_BIN" ] || HEADROOM_BIN="$(command -v headroom 2>/dev/null || true)"
+if [ -n "$HEADROOM_BIN" ]; then
+  HEADROOM_PORT="${HEADROOM_PORT:-8787}"
+  proxy_ver="$(curl -m 2 -fsS "http://127.0.0.1:${HEADROOM_PORT}/health" 2>/dev/null \
+    | grep -o '"version":"[^"]*"' | head -1 | cut -d'"' -f4)"
+  cli_ver="$("$HEADROOM_BIN" --version 2>/dev/null | awk '{print $NF}')"
+  if [ -n "$proxy_ver" ] && [ -n "$cli_ver" ] && [ "$proxy_ver" != "$cli_ver" ]; then
+    warn "headroom proxy on :${HEADROOM_PORT} still runs ${proxy_ver} — restart it to load ${cli_ver}"
+  fi
+fi
 
 if [ -n "$FAILED" ]; then
   warn "Upgrades failed for:${FAILED}"

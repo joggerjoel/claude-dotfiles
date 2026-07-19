@@ -10,8 +10,9 @@ set -euo pipefail
 #   3. Upgrade Claude Code to latest (native `claude update`, or npm
 #      if that's how it was installed).
 #   4. Upgrade the sibling agent CLIs when present — codex,
-#      cursor-agent, cortex, opencode, gemini (scripts/agents-update.sh,
-#      the same script ansible-ai/update.yml runs on the fleet).
+#      cursor-agent, cortex, opencode, gemini, headroom
+#      (scripts/agents-update.sh, the same script ansible-ai/update.yml
+#      runs on the fleet).
 #   5. Prune old backups (last 7 days + first-of-month snapshots).
 #
 # Flags:
@@ -45,7 +46,7 @@ for arg in "$@"; do
     -h|--help)
       echo "Usage: ./update.sh [--dry-run] [--claude-only] [--no-prune]"
       echo "  Backs up config to backup/<timestamp>/ then upgrades Claude Code"
-      echo "  and the sibling agent CLIs (codex, cursor-agent, cortex, opencode, gemini)."
+      echo "  and the sibling agent CLIs (codex, cursor-agent, cortex, opencode, gemini, headroom)."
       exit 0 ;;
     *) warn "Unknown flag: $arg (ignored)" ;;
   esac
