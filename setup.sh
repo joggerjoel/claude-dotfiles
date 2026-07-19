@@ -542,6 +542,19 @@ link_agent_instructions() {
   link_file "$canonical" "$HOME/.config/opencode/AGENTS.md"
   link_file "$canonical" "$HOME/.gemini/GEMINI.md"
   link_file "$canonical" "$HOME/AGENTS.md"
+  link_codex_prompts
+}
+
+# Codex custom prompts (codex/prompts/*.md -> ~/.codex/prompts/<name>.md,
+# typed as /<name> in the Codex TUI). Symlinked, not copied, so a repo pull
+# updates the live prompts — the Claude-side equivalents live in skills/.
+link_codex_prompts() {
+  [ -d "$DOTFILES_DIR/codex/prompts" ] || return 0
+  local f
+  for f in "$DOTFILES_DIR"/codex/prompts/*.md; do
+    [ -f "$f" ] || continue
+    link_file "$f" "$HOME/.codex/prompts/$(basename "$f")"
+  done
 }
 
 # ── Supabase: Cloud vs internal (self-hosted) ────────────────────
