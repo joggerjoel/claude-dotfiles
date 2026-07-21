@@ -1140,6 +1140,13 @@ cmd_update() {
     exec env SETUP_REEXECED=1 bash "$self" update
   fi
 
+  # uv joined ensure_dependencies after the early hosts were set up, and
+  # update (unlike setup) skips the full dependency pass — so converge it
+  # here. headroom's install/upgrade (agents-update.sh) rides on `uv tool`
+  # wherever pipx is absent, which is most of the fleet. Idempotent: no-ops
+  # when uv is already present.
+  ensure_uv
+
   # Read saved preferences
   local profile="desktop" github_user="" hide_ai="no" remote_control="no"
   if [ -f "$DOTFILES_DIR/.local/.profile" ]; then
