@@ -10,6 +10,9 @@
 #   4. Update the 9router gateway   (imports deploy-9router.yml — aorus
 #      hosts only; recreates containers only when the image changed.
 #      Skip with --skip-tags 9router)
+#   5. Refresh the native headroom proxy   (imports deploy-headroom-proxy.yml
+#      — headroom_native_ai hosts only; restarts the systemd user unit when
+#      the running proxy lags the upgraded CLI. Skip with --skip-tags headroom)
 #
 # Workflow: push changes to github.com/joggerjoel/ai-dotfiles, then run this
 # to propagate them to the whole fleet.
@@ -110,3 +113,10 @@
 # Skip entirely with:  ansible-playbook update.yml --skip-tags 9router
 - import_playbook: deploy-9router.yml
   tags: [9router]
+
+# ── 5. Native headroom proxy (systemd user unit, headroom_native_ai hosts) ──
+# agents-update.sh upgrades the headroom CLI but never restarts a live proxy;
+# this play restarts the unit only when /health shows the proxy lagging the
+# CLI. Skip with:  ansible-playbook update.yml --skip-tags headroom
+- import_playbook: deploy-headroom-proxy.yml
+  tags: [headroom]

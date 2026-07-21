@@ -1,0 +1,111 @@
+---
+# Native headroom proxy as a systemd USER service — for hosts that run the
+# proxy straight from the CLI install (`~/.local/bin/headroom proxy`). The
+# ninerouter_ai hosts get their proxy as a Docker container from
+# deploy-9router.yml instead; a host belongs in ONE of the two groups.
+#
+# Idempotent. update.yml imports this playbook, so a fleet update also
+# restarts the unit whenever the running proxy's /health version lags the
+# freshly-upgraded CLI — the manual "restart it to load X" step
+# agents-update.sh used to warn about. First run adopts an ad-hoc
+# `headroom proxy` process by killing it and starting the unit in its place.
+#   Setup / update:  cd ansible-ai && ansible-playbook deploy-headroom-proxy.yml
+#   Skip in update:  ansible-playbook update.yml --skip-tags headroom
+- name: Deploy/refresh native headroom proxy (systemd user unit)
+  hosts: headroom_native_ai
+  gather_facts: true
+  ignore_unreachable: true
+  vars:
+    headroom_port: 8787
+    # systemctl --user over SSH needs the user manager's bus coordinates.
+    systemd_user_env:
+      XDG_RUNTIME_DIR: "/run/user/{{ ansible_user_uid }}"
+      DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ ansible_user_uid }}/bus"
+  tasks:
+    - name: Check the headroom CLI is installed
+      ansible.builtin.stat:
+        path: "{{ ansible_env.HOME }}/.local/bin/headroom"
+      register: headroom_cli
+
+    # No CLI yet (or not Linux — user units are systemd-only): nothing to
+    # supervise. provision/update installs the CLI; next run picks it up.
+    - name: End host without CLI or systemd
+      ansible.builtin.meta: end_host
+      when: not headroom_cli.stat.exists or ansible_system != 'Linux'
+
+    # Without lingering the user manager (and the proxy with it) dies when
+    # the last SSH session closes.
+    - name: Enable systemd lingering
+      become: true
+      ansible.builtin.command: loginctl enable-linger {{ ansible_user_id }}
+      args:
+        creates: "/var/lib/systemd/linger/{{ ansible_user_id }}"
+
+    - name: Ensure user unit dir exists
+      ansible.builtin.file:
+        path: "{{ ansible_env.HOME }}/.config/systemd/user"
+        state: directory
+        mode: "0755"
+
+    - name: Install the headroom-proxy unit
+      ansible.builtin.template:
+        src: templates/headroom-proxy.service.j2
+        dest: "{{ ansible_env.HOME }}/.config/systemd/user/headroom-proxy.service"
+        mode: "0644"
+
+    # Adopt an ad-hoc proxy: anything on the pattern that isn't the unit's
+    # own MainPID gets killed so the unit can bind the port. prox[y] keeps
+    # pgrep from matching this very shell.
+    - name: Stop ad-hoc proxy processes (unit takes over the port)
+      ansible.builtin.shell: |
+        main="$(systemctl --user show -p MainPID --value headroom-proxy 2>/dev/null || echo 0)"
+        status=none
+        for pid in $(pgrep -u "$(id -un)" -f 'headroom(\.cli)? prox[y]'); do
+          [ "$pid" = "$main" ] && continue
+          kill "$pid" && status=killed
+        done
+        echo "adhoc=$status"
+      args:
+        executable: /bin/bash
+      environment: "{{ systemd_user_env }}"
+      register: adhoc
+      changed_when: "'adhoc=killed' in adhoc.stdout"
+
+    - name: Enable + start the proxy unit
+      ansible.builtin.systemd_service:
+        name: headroom-proxy
+        scope: user
+        daemon_reload: true
+        enabled: true
+        state: started
+      environment: "{{ systemd_user_env }}"
+
+    - name: Wait for the proxy to listen
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ headroom_port }}"
+        timeout: 30
+
+    # The upgrade path: agents-update.sh upgrades the CLI in place but
+    # deliberately never restarts a live proxy; this is where the restart
+    # actually happens, and only when versions drifted.
+    - name: Restart the proxy when it lags the CLI
+      ansible.builtin.shell: |
+        proxy="$(curl -m 2 -fsS http://127.0.0.1:{{ headroom_port }}/health 2>/dev/null \
+          | grep -o '"version":"[^"]*"' | head -1 | cut -d'"' -f4)"
+        cli="$("$HOME/.local/bin/headroom" --version 2>/dev/null | awk '{print $NF}')"
+        if [ -z "$proxy" ] || { [ -n "$cli" ] && [ "$proxy" != "$cli" ]; }; then
+          systemctl --user restart headroom-proxy
+          echo "restarted (proxy ${proxy:-down} -> cli ${cli:-?})"
+        else
+          echo "in sync (${proxy})"
+        fi
+      args:
+        executable: /bin/bash
+      environment: "{{ systemd_user_env }}"
+      register: proxy_sync
+      changed_when: "'restarted' in proxy_sync.stdout"
+
+    - name: Report
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }} -> headroom proxy {{ proxy_sync.stdout }}"

@@ -35,6 +35,16 @@ ninerouter_ai:
   hosts:
     server1:
 
+# ── Native headroom proxy host(s) — deploy-headroom-proxy.yml targets ─
+# Hosts that run `headroom proxy` straight from the CLI install, supervised
+# as a systemd user unit (Linux only). ninerouter_ai hosts get their proxy
+# as a Docker container instead — put a host in ONE of the two groups.
+# Also a subset of aorus_ai (list the host in both groups for the
+# connection vars).
+headroom_native_ai:
+  hosts:
+    server2:
+
 # ── Local control node (the machine you run ansible from) ────────
 # `ansible_connection: local` runs tasks here directly — no SSH.
 local_ai:

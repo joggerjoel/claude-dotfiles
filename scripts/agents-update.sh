@@ -218,7 +218,16 @@ if [ -n "$HEADROOM_BIN" ]; then
     | grep -o '"version":"[^"]*"' | head -1 | cut -d'"' -f4)"
   cli_ver="$("$HEADROOM_BIN" --version 2>/dev/null | awk '{print $NF}')"
   if [ -n "$proxy_ver" ] && [ -n "$cli_ver" ] && [ "$proxy_ver" != "$cli_ver" ]; then
-    warn "headroom proxy on :${HEADROOM_PORT} still runs ${proxy_ver} — restart it to load ${cli_ver}"
+    # Whose proxy is lagging? A process of ours → restartable (the fleet
+    # update does it via deploy-headroom-proxy.yml). No process of ours →
+    # it's the Docker container from deploy-9router.yml, and a restart
+    # won't help: the upstream image itself still ships the old version.
+    # prox[y] keeps pgrep from matching its own command line.
+    if pgrep -u "$(id -un)" -f 'headroom(\.cli)? prox[y]' >/dev/null 2>&1; then
+      warn "headroom proxy on :${HEADROOM_PORT} still runs ${proxy_ver} — restart to load ${cli_ver}: systemctl --user restart headroom-proxy (or relaunch it)"
+    else
+      warn "headroom proxy on :${HEADROOM_PORT} runs ${proxy_ver} (Docker-managed, deploy-9router.yml) — upstream image lags the ${cli_ver} CLI; converges when a new image ships"
+    fi
   fi
 fi
 

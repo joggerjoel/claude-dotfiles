@@ -1,0 +1,13 @@
+# ANSIBLE MANAGED — native headroom proxy (ansible-ai/deploy-headroom-proxy.yml).
+# Edit the playbook/template, not this file on the host.
+[Unit]
+Description=Headroom context-optimization proxy (127.0.0.1:{{ headroom_port }})
+After=network-online.target
+
+[Service]
+ExecStart={{ ansible_env.HOME }}/.local/bin/headroom proxy --port {{ headroom_port }}
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
