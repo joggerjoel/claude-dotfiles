@@ -195,6 +195,23 @@ if [ "$RUN_AGENTS" = "yes" ] && [ -x "$DOTFILES_DIR/scripts/agents-update.sh" ];
   "$DOTFILES_DIR/scripts/agents-update.sh" || warn "Some agent CLI upgrades failed (non-fatal)."
 fi
 
+# ── 3b. herdr (firstmate session backend, macOS/brew only) ───────
+# Local-only by design: this lives in update.sh (control-node orchestrator),
+# NOT agents-update.sh — so the ansible fleet never upgrades it. The Mac
+# control nodes that run firstmate keep it current; the Linux aorus hosts
+# never see it. brew-gated, so it also no-ops on a non-brew mac.
+if [ "$RUN_AGENTS" = "yes" ] && command -v brew &>/dev/null && command -v herdr &>/dev/null; then
+  header "herdr (firstmate backend)"
+  before_herdr="$(herdr --version 2>/dev/null | awk '{print $NF}')"
+  if brew upgrade herdr >/dev/null 2>&1; then
+    after_herdr="$(herdr --version 2>/dev/null | awk '{print $NF}')"
+    [ "$before_herdr" = "$after_herdr" ] && ok "herdr: already latest (${after_herdr})" \
+      || ok "herdr: ${before_herdr} → ${after_herdr}"
+  else
+    ok "herdr: already latest (${before_herdr})"
+  fi
+fi
+
 # ── 4. 9router skills (vendored from decolua/9router) ────────────
 # Re-vendors the skill set from upstream and deploys it to
 # ~/.claude/skills. Writes into the repo's skills/ dir, so changes
