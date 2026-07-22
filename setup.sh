@@ -1276,6 +1276,9 @@ case "${1:-}" in
   # Opt-in: stand up THIS machine as a firstmate node (herdr + source toolchain
   # + firstmate clone). Never part of `setup.sh` or `setup.sh update`.
   provision-firstmate) exec bash "$DOTFILES_DIR/scripts/provision-firstmate.sh" ;;
+  # Opt-in: make THIS machine a firstmate worker (herdr + harnesses; persistent
+  # attachable sessions). Lighter than a node — no orchestrator toolchain.
+  provision-firstmate-worker) exec bash "$DOTFILES_DIR/scripts/provision-firstmate-worker.sh" ;;
   help|--help|-h)
     echo "Claude Code Dotfiles Setup"
     echo ""
