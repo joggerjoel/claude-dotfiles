@@ -3,7 +3,8 @@ set -uo pipefail
 
 # ─────────────────────────────────────────────────────────────────
 # agents-update.sh — upgrade the sibling agent CLIs, when installed:
-#   codex (OpenAI), cursor-agent (Cursor), opencode, gemini (Google),
+#   codex (OpenAI), cursor-agent (Cursor), opencode, gemini (Google), pi (Earendil),
+#   grok (xAI),
 #   cortex (Snowflake Cortex Code), headroom (context-optimization proxy).
 # Also reports (but never updates) the 9router gateway — a Docker
 # service on the fleet, not a local CLI; see the block at the bottom.
@@ -162,6 +163,18 @@ if command -v brew >/dev/null 2>&1; then
   brew list --formula gemini-cli >/dev/null 2>&1 && GEMINI_UPGRADE="brew upgrade gemini-cli"
 fi
 update_cli "gemini" "gemini" "$GEMINI_UPGRADE" "$GEMINI_INSTALL"
+
+# pi (Earendil Pi coding agent) — npm global, MIT. Vendor documents
+# --ignore-scripts on install; pi has its own updater (`pi update self`),
+# so prefer that and fall back to npm if the self-update path fails.
+PI_INSTALL="npm install -g --ignore-scripts @earendil-works/pi-coding-agent"
+update_cli "pi" "pi" "\"%BIN%\" update self || $PI_INSTALL" "$PI_INSTALL"
+
+# grok (official xAI Grok CLI) — npm global. The @xai-official/grok package
+# is the one firstmate's grok harness targets (grok --always-approve); the
+# many third-party grok-cli packages are NOT interchangeable.
+GROK_INSTALL="npm install -g @xai-official/grok@latest"
+update_cli "grok" "grok" "$GROK_INSTALL" "$GROK_INSTALL"
 
 # headroom is a pipx- or uv-tool-managed python CLI; `headroom update`
 # confirms on a tty, so drive the manager directly. Resolve both by

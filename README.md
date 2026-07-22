@@ -105,7 +105,7 @@ Or the three layers individually:
 
 ```bash
 ./update.sh             # Binaries: Claude Code + the sibling agent CLIs
-                        # (codex, cursor-agent, cortex, opencode, gemini).
+                        # (codex, cursor-agent, cortex, opencode, gemini, pi, grok).
                         # Snapshots config to backup/<timestamp>/ with a
                         # generated rollback.sh first. Offers to install
                         # missing CLIs when run interactively.

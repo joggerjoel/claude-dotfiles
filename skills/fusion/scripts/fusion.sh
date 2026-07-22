@@ -7,8 +7,10 @@
 #                                                builder builds, gate runs, failures loop back
 #
 # Engines (override via env):
-#   FUSION_ARCHITECT_CMD  default: claude   (headless: claude -p --output-format json)
-#   FUSION_BUILDER_CMD    default: codex    (headless: codex exec -o <file>)
+#   FUSION_ARCHITECT_CMD    default: claude  (headless: claude -p --output-format json)
+#   FUSION_BUILDER_CMD      default: codex   (headless: codex exec -o <file>)
+#   FUSION_BUILDER_ENGINE   codex (default) | pi  — swap the builder to the Pi
+#                           coding agent (needs Pi authenticated: run `pi`, /login)
 # Artifacts: $FUSION_DIR (default /tmp/fusion-harness)/run-<ts>/ — never inside the repo.
 # Every run emits meta.json + report.html (self-contained; consensus/divergence cards).
 set -uo pipefail
@@ -55,12 +57,50 @@ PY
 }
 
 run_builder() { # $1=prompt-file $2=slug $3=sandbox (read-only|workspace-write)
+  # Builder engine is codex by default; set FUSION_BUILDER_ENGINE=pi to use Pi.
+  # (Pi is the agent the original fusion-harness was built on. Requires Pi to be
+  # authenticated — `pi` then /login — or it fails closed with a clear error.)
+  [ "${FUSION_BUILDER_ENGINE:-codex}" = "pi" ] && { run_pi "$@"; return $?; }
   local pf="$1" slug="$2" sandbox="${3:-read-only}" t0 t1 rc
   t0=$(date +%s)
   codex exec -s "$sandbox" --ephemeral --skip-git-repo-check \
     -o "$RUN_DIR/$slug.txt" "$(cat "$pf")" > "$RUN_DIR/$slug.log" 2>&1
   rc=$?
   t1=$(date +%s)
+  echo "$((t1-t0)) $rc"
+}
+
+run_pi() { # $1=prompt-file $2=slug $3=sandbox (advisory only — Pi has no sandbox flag)
+  # Pi headless: JSONL event stream on stdout. The final answer is the last
+  # assistant message (agent_end.messages / message_end). See docs/json.md.
+  local pf="$1" slug="$2" t0 t1 rc
+  t0=$(date +%s)
+  pi -p --mode json "$(cat "$pf")" > "$RUN_DIR/$slug.jsonl" 2> "$RUN_DIR/$slug.err"
+  rc=$?
+  t1=$(date +%s)
+  python3 - "$RUN_DIR/$slug.jsonl" "$RUN_DIR/$slug.txt" <<'PY' 2>/dev/null
+import json, sys
+answer = ""
+def text_of(msg):
+    c = msg.get("content")
+    if isinstance(c, str): return c
+    if isinstance(c, list):
+        return "".join(p.get("text", "") for p in c if isinstance(p, dict) and p.get("type") == "text")
+    return ""
+for line in open(sys.argv[1], encoding="utf-8", errors="replace"):
+    line = line.strip()
+    if not line: continue
+    try: ev = json.loads(line)
+    except Exception: continue
+    t = ev.get("type")
+    if t == "agent_end":
+        msgs = [m for m in ev.get("messages", []) if m.get("role") == "assistant"]
+        if msgs: answer = text_of(msgs[-1])
+    elif t in ("message_end", "turn_end") and ev.get("message", {}).get("role") == "assistant":
+        got = text_of(ev["message"])
+        if got: answer = got
+open(sys.argv[2], "w").write(answer)
+PY
   echo "$((t1-t0)) $rc"
 }
 

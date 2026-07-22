@@ -193,6 +193,52 @@
         executable: /bin/bash
       when: gemini_check.rc != 0
 
+    # pi (Earendil Pi coding agent) — npm global; a firstmate co-primary harness.
+    - name: Is the Pi CLI present? (npm global lives under nvm)
+      ansible.builtin.shell: |
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+        command -v pi
+      args:
+        executable: /bin/bash
+      register: pi_check
+      changed_when: false
+      failed_when: false
+
+    - name: Install Pi CLI (npm global, via nvm; vendor documents --ignore-scripts)
+      ansible.builtin.shell: |
+        set -o pipefail
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+        npm install -g --ignore-scripts @earendil-works/pi-coding-agent
+      args:
+        executable: /bin/bash
+      when: pi_check.rc != 0
+
+    # grok (official xAI Grok CLI) — npm global; a firstmate co-primary harness.
+    # @xai-official/grok is the package firstmate targets; third-party grok-cli
+    # packages are NOT interchangeable.
+    - name: Is the Grok CLI present? (npm global lives under nvm)
+      ansible.builtin.shell: |
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+        command -v grok
+      args:
+        executable: /bin/bash
+      register: grok_check
+      changed_when: false
+      failed_when: false
+
+    - name: Install Grok CLI (npm global, via nvm)
+      ansible.builtin.shell: |
+        set -o pipefail
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+        npm install -g @xai-official/grok
+      args:
+        executable: /bin/bash
+      when: grok_check.rc != 0
+
     # headroom (context-optimization proxy the CLIs can route through).
     # pipx- or uv-managed: Debian's pipx package isn't reliably available
     # (the Stage 0 install is best-effort), so fall back to `uv tool` and
@@ -272,12 +318,14 @@
         for p in "$HOME/.opencode/bin/opencode" "$HOME/.local/bin/opencode"; do
           [ -x "$p" ] && { oc=present; break; }
         done
-        printf 'codex=%s cursor=%s cortex=%s opencode=%s gemini=%s headroom=%s' \
+        printf 'codex=%s cursor=%s cortex=%s opencode=%s gemini=%s pi=%s grok=%s headroom=%s' \
           "$([ -x "$HOME/.local/bin/codex" ] && echo present || echo MISSING)" \
           "$([ -x "$HOME/.local/bin/cursor-agent" ] && echo present || echo MISSING)" \
           "$([ -x "$HOME/.local/bin/cortex" ] && echo present || echo MISSING)" \
           "$oc" \
           "$(command -v gemini >/dev/null 2>&1 && echo present || echo MISSING)" \
+          "$(command -v pi >/dev/null 2>&1 && echo present || echo MISSING)" \
+          "$(command -v grok >/dev/null 2>&1 && echo present || echo MISSING)" \
           "$([ -x "$HOME/.local/bin/headroom" ] && echo present || echo MISSING)"
       args:
         executable: /bin/bash
