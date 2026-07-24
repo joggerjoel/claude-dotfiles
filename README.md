@@ -19,6 +19,14 @@ AI workforce across a fleet of machines. The name stuck; the scope didn't.
 > **New here?** Run `./setup.sh`, then open Claude Code and say **`help me get started`** — it walks
 > you through building and shipping. Or read **[GETTING-STARTED.md](GETTING-STARTED.md)** first.
 
+> **Your machines, not mine.** Every host name in this repo (`macstudio`, `mac`, `aorus…`) is an
+> **example**, not a requirement — nothing personal is baked in. Retarget the whole system in three
+> steps: `cp .env.example .env` and set `FLEET_NODE=<your-node's-ssh-alias>`; generate your own
+> fleet inventory from your `~/.ssh/config` (`ansible-ai/ssh-ansible-sync.sh`); run
+> `just install-hil` and the agent verifies the rest. A single laptop is a valid fleet of one —
+> the node/HUD/worker split is optional scale, not an entry requirement. Your real hosts, IPs, and
+> tokens live only in gitignored files (`.env`, `inventory.local.yml`).
+
 ## What this is (the two layers)
 
 - **The base — `ai-dotfiles` (required).** Stocks every machine and gives you a working AI toolkit
@@ -107,6 +115,12 @@ just fleet-update   # ansible update across every host
 just install-hil    # agentic, human-in-the-loop machine onboarding
 ```
 
+**Not my machines?** The `macstudio`/`mac`/`aorus` names throughout are _examples_, not
+requirements — every target is a knob: copy the fleet section of [.env.example](.env.example) into
+a repo-root `.env` (gitignored, auto-loaded by the justfile) and point `FLEET_NODE` &
+`HERDR_REMOTE_*` at your own node; your fleet comes from your own gitignored
+`ansible-ai/inventory.local.yml` (generated from `~/.ssh/config` by `ssh-ansible-sync.sh`).
+
 The justfile is the single source of truth for commands — recipes are documented there, not
 duplicated here. New machine or new engineer? `git clone && just install-hil`: the Claude Code
 **Setup hook** ([.claude/settings.json](.claude/settings.json)) runs a deterministic tool census
@@ -118,7 +132,9 @@ playbook, so second-order fixes live in the repo, not in one engineer's memory.
 
 ## The fleet — deployment
 
-The workforce runs across machines with distinct roles, all provisioned from this repo:
+The workforce runs across machines with distinct **roles** — the roles are the contract, the
+machines are whatever you have. Map them to your own boxes in `inventory.local.yml` + `.env`;
+start with one machine playing every role and split out roles as you grow:
 
 | Role                  | Machine (example) | Runs                                                     |
 | --------------------- | ----------------- | -------------------------------------------------------- |

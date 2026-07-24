@@ -26,8 +26,14 @@ and only stop for genuinely blocking decisions.
    or skip with a note (one-shot).
 4. **Interactive mode only:** ask (AskUserQuestion, batches of ≤4):
    - machine role: HUD/laptop · node (always-on, firstmate) · fleet worker?
+   - **their node's ssh alias** (the repo's `macstudio`/`mac` names are examples,
+     not requirements) — then write a repo-root `.env` from the fleet section of
+     `.env.example` with their `FLEET_NODE` / `HERDR_REMOTE_SSH` /
+     `HERDR_REMOTE_HOST`, and confirm `just node-status` reaches it.
    - install optional harnesses (codex/pi/grok/opencode)? herdr backend?
    - run fleet provisioning too (`ansible-ai/provision-just.yml`, `update.yml`)?
+     Their fleet inventory is their own: `ansible-ai/inventory.local.yml`,
+     generated from their `~/.ssh/config` via `ssh-ansible-sync.sh`.
      Then act on the answers. For role=node, also run
      `scripts/herdr-node.sh service install all` and verify with `status`.
 5. **Verify.** Re-run `scripts/setup-init.sh`; confirm the summary line reports

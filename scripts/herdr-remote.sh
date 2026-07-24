@@ -34,8 +34,8 @@ header(){ echo -e "\n${BOLD}$1${RESET}"; }
 
 export PATH="$HOME/.local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:$HOME/.bun/bin:$HOME/.cargo/bin:$PATH"
 
-HOST="${HERDR_REMOTE_HOST:-mac}"                  # tailnet name/IP — control-plane bridge
-SSH_TARGET="${HERDR_REMOTE_SSH:-macstudio}"       # ssh alias — interactive attach
+HOST="${HERDR_REMOTE_HOST:-${FLEET_NODE:-mac}}"           # tailnet name/IP — control-plane bridge
+SSH_TARGET="${HERDR_REMOTE_SSH:-${FLEET_NODE:-macstudio}}" # ssh alias — interactive attach
 PORT="${HERDR_BRIDGE_PORT:-7070}"
 REMOTE_CFG="${HERDR_REMOTE_CFG:-$HOME/.herdr-remote-cfg}"
 SOCK="$REMOTE_CFG/herdr/herdr.sock"
