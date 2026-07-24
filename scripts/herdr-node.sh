@@ -139,10 +139,21 @@ cmd_service_install() {
   <key>EnvironmentVariables</key>
   <dict>
     <key>HERDR_SESSION</key><string>${SESSION}</string>
+    <!-- firstmate crewmates launch `claude` inside herdr panes and inherit this
+         server's environment. The autoresearch plugin's scout-block hook is a
+         file-access guard that blocks crewmate reads mid-task; disable it for
+         panes here so the firstmate checkout stays pristine (no fm-spawn.sh edit). -->
+    <key>AR_DISABLE_SCOUT_BLOCK</key><string>1</string>
     <key>PATH</key><string>${HOME}/.local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin</string>
   </dict>
   <key>RunAtLoad</key><true/>
-  <key>KeepAlive</key><true/>
+  <!-- Restart only on ABNORMAL exit. A plain KeepAlive=true would respawn the
+       server the instant herdr shuts it down for its own restart/update handoff,
+       making `herdr --remote` fail with "old server is still responding". -->
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key><false/>
+  </dict>
   <key>StandardOutPath</key><string>${LOG_DIR}/herdr-node.out</string>
   <key>StandardErrorPath</key><string>${LOG_DIR}/herdr-node.err</string>
 </dict>
